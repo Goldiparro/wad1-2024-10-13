@@ -11,7 +11,8 @@ $user = [
     'firstname' => '',
     'lastname'  => '',
     'email'     => '',
-    'username'  => ''
+    'username'  => '',
+    'prof_avatar' => ''
 ];
 
 if(isset($_SESSION['example1_user_id']) && isset($conn))
@@ -29,6 +30,7 @@ if(isset($_SESSION['example1_user_id']) && isset($conn))
         $user['lastname']  = $row['lastname'];
         $user['email']     = $row['email'];
         $user['username']  = $row['username'];
+        $user['prof_avatar'] = $row['prof_avatar']; // add su prof_avatar na row
     }
     else {
         // force sign-out

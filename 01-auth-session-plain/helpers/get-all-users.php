@@ -11,7 +11,7 @@ $users = [];
 if(isset($conn))
 {
     // query for all users
-    $stmt = $conn->prepare("SELECT * FROM `users` ORDER BY `firstname`, `lastname`");
+    $stmt = $conn->prepare("SELECT * FROM `users` ORDER BY `firstname`, `lastname`, `prof_avatar`"); // add lang sa prof_avatar
     $stmt->execute();
     $result = $stmt->get_result();
     while($row = $result->fetch_assoc()) {
@@ -21,7 +21,8 @@ if(isset($conn))
             'firstname' => $row['firstname'],
             'lastname'  => $row['lastname'],
             'email'     => $row['email'],
-            'username'  => $row['username']
+            'username'  => $row['username'],
+            'prof_avatar' => $row['prof_avatar'] // same thing here 
         ];
     }
 }

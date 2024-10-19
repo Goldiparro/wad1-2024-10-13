@@ -27,11 +27,12 @@ $email     = '';
 $username  = '';
 $firstname = '';
 $lastname  = '';
+$prof_avatar = ''; 
 $error     = '';
 
 // process sign-up request when the form is submitted
-if(isset($_POST['sign-up']))
-{
+if(isset($_POST['sign-up'])) {
+
     // get sign-up data
     $email     = trim($_POST['email']);     // trim() strips beginning and end whitespaces
     $username  = trim($_POST['username']);
@@ -39,7 +40,29 @@ if(isset($_POST['sign-up']))
     $lastname  = trim($_POST['lastname']);
     $password1 = $_POST['password1'];
     $password2 = $_POST['password2'];
+    $prof_avatar = $_FILES['prof_avatar']; // para sa profile picture 
+   }
+    //para sa file upload 
+    if (isset($_FILES['prof_avatar']) && $_FILES['prof_avatar']['error'] == UPLOAD_ERR_OK) { $prof_avatar = $_FILES['prof_avatar'];
 
+    //check file extension
+    $file_extension = strtolower(pathinfo($prof_avatar['name'], PATHINFO_EXTENSION)); // PATHINFO_EXTENSION - if jpg a file, iextract yan as jpg pa rin. same file type
+
+    //execution na dapat is pang img file only
+    if (!in_array($file_extension, ['jpg', 'jpeg', 'png'])){
+        echo 'Only JPG, JPEG, and PNG filetypes are allowed';
+        exit;
+    }
+
+    //upload ng file sa db
+    $upload_dir = 'upload/';
+    $file_name = uniqid() . '.' . $file_extension;
+    $file_path = $upload_dir . $file_name;
+
+    //para mapunta sa desired path
+    move_uploaded_file($prof_avatar['tmp_name'], $file_path);
+    }
+    
     // validate sign-up data: no fields should be empty
     if(empty($email) || empty($username) || empty($firstname) || empty($lastname) || empty($password1)) {
         $error = 'All fields are required.';
@@ -80,9 +103,10 @@ if(isset($_POST['sign-up']))
 
     // if there's no $error, insert new user
     if($error == '') {
-        $stmt = $conn->prepare("INSERT INTO `users`(`email`, `username`, `firstname`, `lastname`, `password`) VALUES(?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssss", $email, $username, $firstname, $lastname, $password1);
+        $stmt = $conn->prepare("INSERT INTO `users`(`email`, `username`, `firstname`, `lastname`, `password`, `prof_avatar`) VALUES(?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssss", $email, $username, $firstname, $lastname, $password1, $file_path);
         $stmt->execute();
+      
         // if insert is successful, sign-in the user using the inserted user id and redirect to homepage
         if($stmt->affected_rows > 0) {
             $_SESSION['example1_user_id'] = $stmt->insert_id;
@@ -93,7 +117,7 @@ if(isset($_POST['sign-up']))
             $error = 'Something went wrong. Please try again.';
         }
     }
-}
+
 ?>
 
 <!-- html top -->
@@ -118,7 +142,7 @@ if(isset($_POST['sign-up']))
         <div class="col-md-8 offset-md-2">
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="sign-up.php">
+                    <form method="POST" action="sign-up.php" enctype="multipart/form-data">
                         <div class="mb-3">
                             <div class="row">
                                 <!-- email -->
@@ -160,6 +184,12 @@ if(isset($_POST['sign-up']))
                         <div class="mb-3">
                             <label for="password2" class="form-label">Confirm Password</label>
                             <input type="password" class="form-control" id="password2" name="password2" required>
+                        </div>
+
+                        <!-- for prof.avatar -->
+                        <div class="mb-3">
+                            <label for="prof_avatar" class="form-label">Profile Avatar</label>
+                            <input type="file" class="form-control" id="prof_avatar" name="prof_avatar" accept="image/*" required>
                         </div>
 
                         <!-- error message (if there's any) -->

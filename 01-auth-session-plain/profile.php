@@ -33,7 +33,8 @@ while($row = $result->fetch_assoc()) {
         'firstname' => $row['firstname'],
         'lastname'  => $row['lastname'],
         'email'     => $row['email'],
-        'username'  => $row['username']
+        'username'  => $row['username'],
+        'prof_avatar' => $row['prof_avatar'] // insert 
     ];
 }
 
@@ -197,8 +198,51 @@ if(isset($_POST['update-account']))
     }
 }
 
-// process update password request when the form is submitted
-if(isset($_POST['update-password']))
+// update para sa prof.avatar
+if(isset($_POST['update-prof_avatar'])) {
+    // check if nakaupload kin file
+    if(isset($_FILES['prof_avatar']) && $_FILES['prof_avatar']['error'] == UPLOAD_ERR_OK) {
+        $fileTmpPath = $_FILES['prof_avatar']['tmp_name'];
+        $fileName = $_FILES['prof_avatar']['name'];
+        $fileSize = $_FILES['prof_avatar']['size'];
+        $fileType = $_FILES['prof_avatar']['type'];
+        $fileNameCmps = explode(".", $fileName);
+        $fileExtension = strtolower(end($fileNameCmps));
+
+        // validate 
+        $allowedfileExtensions = array('jpg', 'png', 'jpeg');
+        if (in_array($fileExtension, $allowedfileExtensions)) {
+           
+        // set new file type
+        $uploadFileDir = 'updated/'; // Ensure this directory exists
+        $newFileName = $user['id'] . '.' . $fileExtension; 
+        $dest_path = $uploadFileDir . $newFileName;
+
+        // move sa desired path
+        if(move_uploaded_file($fileTmpPath, $dest_path)) {
+            
+        // update db sa updated prof.avatar
+        $stmt = $conn->prepare("UPDATE `users` SET `prof_avatar` = ? WHERE `id` = ?");
+        $stmt->bind_param("si", $dest_path, $user['id']);
+        $stmt->execute();
+        if($stmt->affected_rows > 0) {
+                    
+        // redirect sa sadiri with the updated na avatar
+         header('location: profile.php?id=' . $user['id'] . '&tab=settings');
+                }
+            } else {
+                $error['personal'] = 'There was an error moving the uploaded file.';
+            }
+        } else {
+            $error['personal'] = 'Upload failed. Allowed file types: ' . implode(', ', $allowedfileExtensions);
+        }
+    } else {
+        $error['personal'] = 'No file uploaded or there was an upload error.';
+    }
+}
+
+    // process update password request when the form is submitted
+    if(isset($_POST['update-password']))
 {
     // get submitted password data
     $old_password  = $_POST['old_password'];
@@ -248,7 +292,10 @@ if(isset($_POST['update-password']))
     <!-- content header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center gap-3">
-            <h2 class="m-0"><i class="fas fa-fw fa-user-circle"></i> <?= htmlspecialchars($profile['firstname']) ?> <?= htmlspecialchars($profile['lastname']) ?></h2>
+            <h2 class="m-0"> <img src="<?= htmlspecialchars($profile['prof_avatar']) ?>" alt = "Profile Avatar" class="rounded-circle" style="width: 50px; height: 50px;">
+                <?= htmlspecialchars($profile['firstname']) ?>
+                <?= htmlspecialchars($profile['lastname']) ?>
+            </h2>
         </div>
         <a href="index.php" class="btn btn-outline-dark">
             <i class="fas fa-fw fa-arrow-left"></i> Home
@@ -450,8 +497,37 @@ if(isset($_POST['update-password']))
                     </div>
                 </div>
 
+                <!-- avatar -->
+                <div class="col-md-6">
+                    <div class="card mt-3">
+                        <div class="card-header bg-secondary text-light fw-bold">Change Profile Avatar</div>
+                        <div class="card-body">
+                            <!-- Display current avatar -->
+                            <div class="mb-3">
+                            <label for="current_avatar" class="form-label">Current Profile Avatar:</label>
+                            <img src="<?= htmlspecialchars($user['prof_avatar']) ?>" alt="Current Profile Avatar" class="rounded-circle" style="width: 155px; height: 158px;">
+                            </div>
+
+                            <form method="POST" action="profile.php?id=<?= $user['id'] ?>&tab=settings" enctype = "multipart/form-data">
+                                <div class="row">
+                                    <!-- update profile -->
+                                    <div class="col-sm-12 mb-3">
+                                        <label for="prof_avatar" class="form-label">Profile Avatar</label>
+                                        <input type="file" class="form-control" id="prof_avatar" name="prof_avatar" accept="image/*" required value="<?= htmlspecialchars($user['prof_avatar']) ?>" required>
+                                    </div>
+                                </div>
+
+                                <!-- update personal information button -->
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" name="update-prof_avatar" class="btn btn-dark">Update</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- password -->
-                <div class="col-md-12">
+                <div class="col-md-6">
                     <div class="card mt-3">
                         <div class="card-header bg-secondary text-light fw-bold">Password</div>
                         <div class="card-body">
@@ -464,19 +540,19 @@ if(isset($_POST['update-password']))
                             <form method="POST" action="profile.php?id=<?= $user['id'] ?>&tab=settings">
                                 <div class="row">
                                     <!-- old password -->
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-12 mb-3">
                                         <label for="old_password" class="form-label">Old Password</label>
                                         <input type="password" class="form-control" id="old_password" name="old_password" required>
                                     </div>
 
                                     <!-- new password -->
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-12 mb-3">
                                         <label for="new_password1" class="form-label">New Password</label>
                                         <input type="password" class="form-control" id="new_password1" name="new_password1" required>
                                     </div>
 
                                     <!-- retype new password -->
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-12 mb-3">
                                         <label for="new_password2" class="form-label">Confirm New Password</label>
                                         <input type="password" class="form-control" id="new_password2" name="new_password2" required>
                                     </div>
